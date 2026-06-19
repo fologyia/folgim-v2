@@ -1,0 +1,407 @@
+"""
+helpers_graficos_melhorados.py
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Substitui as três funções de gráfico em pdf/helpers.py:
+  · _pdf_radar_chart      → _pdf_radar_chart        (mesmo nome, mesma assinatura)
+  · _pdf_line_chart_evolucao → _pdf_line_chart_evolucao (idem)
+  · _pdf_bar_bimestre     → _pdf_bar_bimestre        (idem)
+
+Cole o conteúdo dessas três funções no seu helpers.py,
+substituindo as versões antigas.
+
+Melhorias implementadas
+───────────────────────
+Radar:
+  • Desenhado manualmente (sem SpiderChart do ReportLab, que trava labels)
+  • Grades em polígono regulares com rótulos de escala (2/4/6/8/10)
+  • Linha pontilhada vermelha de mínimo (6,0)
+  • Pontos coloridos nos vértices com valor numérico ao lado
+  • Área da turma (cinza) + área do aluno (azul) sobrepostas
+  • Legenda compacta
+
+Linha de evolução:
+  • Sem datas duplicadas confusas (27/05·2, 27/05·3...)
+  • Eixo Y com valores (0,2,4,6,8,10) e linha de mínimo
+  • Fundo avermelhado suave abaixo do mínimo
+  • Ponto colorido em cada avaliação + valor numérico anotado
+  • Linha de tendência EMA pontilhada em âmbar
+  • Legenda clara
+
+Barras bimestrais:
+  • Valores dentro (ou acima) de cada barra
+  • Cores condicionais (verde/âmbar/vermelho) por média
+  • Linha de tendência entre topos das barras
+  • Ponto no topo de cada barra
+  • Contagem de avaliações por semana
+  • Labels curtos (remove "2026-") para não vazar
+"""
+
+import math
+import pandas as pd
+from reportlab.lib import colors
+from reportlab.lib.units import cm
+from reportlab.graphics.shapes import (
+    Drawing, Rect, Line, String, Circle, PolyLine, Polygon,
+)
+
+from config import NOTA_MINIMA
+from pdf.styles import _C
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# helpers internos (não exportados)
+# ─────────────────────────────────────────────────────────────────────────────
+def _cor_nota_local(nota: float) -> colors.Color:
+    if nota >= 8:         return _C["verde"]
+    if nota >= NOTA_MINIMA: return _C["amarelo"]
+    return _C["verm"]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RADAR CHART — versão manual com escala numérica e linha de mínimo
+# ─────────────────────────────────────────────────────────────────────────────
+def _pdf_radar_chart(
+    criterios: list,
+    vals_aluno: list,
+    vals_turma: list | None,
+    largura: float = 240,
+    altura: float = 210,
+) -> Drawing:
+    """Radar chart manual com grade, valores numéricos e linha de mínimo."""
+    d = Drawing(largura, altura)
+    n = len(criterios)
+    if n < 3:
+        return d
+
+    cx   = largura / 2
+    cy   = altura / 2 - 4
+    raio = min(cx, cy) - 40   # margem generosa para os rótulos
+
+    # ── grade (polígonos de fundo) ───────────────────────────────────────────
+    for nv in [2, 4, 6, 8, 10]:
+        r = raio * (nv / 10.0)
+        pts = []
+        for i in range(n):
+            ang = math.pi / 2 - 2 * math.pi * i / n
+            pts += [cx + r * math.cos(ang), cy + r * math.sin(ang)]
+        pts += [pts[0], pts[1]]
+        d.add(PolyLine(pts, strokeColor=_C["cinza2"], strokeWidth=0.5))
+        # rótulo de escala — posicionado no eixo do primeiro critério
+        ang0 = math.pi / 2
+        lx = cx + r * math.cos(ang0) + 2
+        ly = cy + r * math.sin(ang0) - 4
+        d.add(String(lx, ly, str(nv),
+                     fontSize=5.5, fillColor=_C["cinza4"],
+                     fontName="Helvetica"))
+
+    # ── eixos radiais ─────────────────────────────────────────────────────────
+    for i in range(n):
+        ang = math.pi / 2 - 2 * math.pi * i / n
+        d.add(Line(cx, cy,
+                   cx + raio * math.cos(ang),
+                   cy + raio * math.sin(ang),
+                   strokeColor=_C["cinza2"], strokeWidth=0.5))
+
+    # ── linha pontilhada de mínimo ────────────────────────────────────────────
+    r_min = raio * (NOTA_MINIMA / 10.0)
+    pts_min = []
+    for i in range(n):
+        ang = math.pi / 2 - 2 * math.pi * i / n
+        pts_min += [cx + r_min * math.cos(ang), cy + r_min * math.sin(ang)]
+    pts_min += [pts_min[0], pts_min[1]]
+    d.add(PolyLine(pts_min,
+                   strokeColor=_C["verm"], strokeWidth=1.0,
+                   strokeDashArray=[3, 2]))
+
+    # ── área da turma ─────────────────────────────────────────────────────────
+    if vals_turma:
+        pts_t = []
+        for i, v in enumerate(vals_turma):
+            ang = math.pi / 2 - 2 * math.pi * i / n
+            r   = raio * (min(float(v or 0), 10.0) / 10.0)
+            pts_t += [cx + r * math.cos(ang), cy + r * math.sin(ang)]
+        d.add(Polygon(pts_t,
+                      fillColor=colors.HexColor("#94A3B820"),
+                      strokeColor=_C["cinza3"],
+                      strokeWidth=1.0))
+
+    # ── área do aluno ─────────────────────────────────────────────────────────
+    pts_a = []
+    for i, v in enumerate(vals_aluno):
+        ang = math.pi / 2 - 2 * math.pi * i / n
+        r   = raio * (min(float(v or 0), 10.0) / 10.0)
+        pts_a += [cx + r * math.cos(ang), cy + r * math.sin(ang)]
+    d.add(Polygon(pts_a,
+                  fillColor=colors.HexColor("#00539F25"),
+                  strokeColor=_C["azul"],
+                  strokeWidth=1.8))
+
+    # ── pontos + valor numérico em cada vértice ───────────────────────────────
+    for i, v in enumerate(vals_aluno):
+        ang = math.pi / 2 - 2 * math.pi * i / n
+        r   = raio * (min(float(v or 0), 10.0) / 10.0)
+        px  = cx + r * math.cos(ang)
+        py  = cy + r * math.sin(ang)
+        cor = _cor_nota_local(v)
+        d.add(Circle(px, py, 3.5,
+                     fillColor=cor, strokeColor=colors.white, strokeWidth=0.8))
+        # valor numérico deslocado ligeiramente para fora do ponto
+        dx = 7 * math.cos(ang)
+        dy = 7 * math.sin(ang)
+        d.add(String(px + dx, py + dy - 2.5, f"{v:.1f}",
+                     fontSize=6.5, fillColor=cor,
+                     fontName="Helvetica-Bold", textAnchor="middle"))
+
+    # ── rótulos dos critérios ─────────────────────────────────────────────────
+    for i, crit in enumerate(criterios):
+        ang  = math.pi / 2 - 2 * math.pi * i / n
+        dist = raio + 16
+        lx   = cx + dist * math.cos(ang)
+        ly   = cy + dist * math.sin(ang)
+        label = str(crit).replace("Leórica", "Teórica")
+        palavras = label.split()
+        # quebra em duas linhas se longo
+        if len(palavras) > 2:
+            meio  = (len(palavras) + 1) // 2
+            linhas = [" ".join(palavras[:meio]), " ".join(palavras[meio:])]
+        else:
+            linhas = [label]
+        for k, linha in enumerate(linhas):
+            offset = (len(linhas) - 1) * 3.5 - k * 7
+            d.add(String(lx, ly + offset, linha,
+                         fontSize=6.5, fillColor=_C["texto"],
+                         fontName="Helvetica-Bold", textAnchor="middle"))
+
+    # ── legenda compacta ──────────────────────────────────────────────────────
+    leg_y = 8
+    d.add(Rect(4, leg_y, 10, 5,
+               fillColor=colors.HexColor("#00539F25"),
+               strokeColor=_C["azul"], strokeWidth=1.2))
+    d.add(String(17, leg_y, "Aluno",
+                 fontSize=6, fillColor=_C["texto2"], fontName="Helvetica"))
+    if vals_turma:
+        d.add(Rect(50, leg_y, 10, 5,
+                   fillColor=colors.HexColor("#94A3B820"),
+                   strokeColor=_C["cinza3"], strokeWidth=1.0))
+        d.add(String(63, leg_y, "Turma",
+                     fontSize=6, fillColor=_C["texto2"], fontName="Helvetica"))
+    # linha de mínimo na legenda
+    d.add(Line(largura - 66, leg_y + 2.5, largura - 54, leg_y + 2.5,
+               strokeColor=_C["verm"], strokeWidth=1.0, strokeDashArray=[3, 2]))
+    d.add(String(largura - 51, leg_y, f"Mínimo ({NOTA_MINIMA:.0f})",
+                 fontSize=6, fillColor=_C["verm"], fontName="Helvetica"))
+
+    return d
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LINE CHART DE EVOLUÇÃO — eixos com valores, pontos anotados, EMA
+# ─────────────────────────────────────────────────────────────────────────────
+def _pdf_line_chart_evolucao(
+    df_al: pd.DataFrame,
+    largura: float = 220,
+    altura: float = 165,
+) -> Drawing:
+    """Gráfico de linha das últimas avaliações com anotações numéricas."""
+    if df_al.empty:
+        return Drawing(largura, altura)
+
+    d = Drawing(largura, altura)
+
+    pad_l, pad_r, pad_b, pad_t = 30, 14, 30, 14
+    w = largura - pad_l - pad_r
+    h = altura  - pad_b - pad_t
+
+    df_plot = df_al.sort_values("Data").tail(12).copy()
+    notas = [float(v) for v in df_plot["Nota"].tolist()]
+    n = len(notas)
+    if n < 1:
+        return d
+
+    def _x(i): return pad_l + (i * w / max(n - 1, 1))
+    def _y(v): return pad_b + (v / 10.0) * h
+
+    # ── fundo avermelhado abaixo do mínimo ───────────────────────────────────
+    y6 = _y(NOTA_MINIMA)
+    d.add(Rect(pad_l, pad_b, w, y6 - pad_b,
+               fillColor=colors.HexColor("#E3061308"),
+               strokeColor=None, strokeWidth=0))
+
+    # ── grade horizontal e eixo Y ────────────────────────────────────────────
+    for nv in [0, 2, 4, 6, 8, 10]:
+        yg = _y(nv)
+        d.add(Line(pad_l, yg, pad_l + w, yg,
+                   strokeColor=_C["cinza2"] if nv != 0 else _C["cinza3"],
+                   strokeWidth=0.4 if nv != 0 else 0.6))
+        d.add(String(pad_l - 3, yg - 3, str(nv),
+                     fontSize=6, fillColor=_C["cinza4"],
+                     fontName="Helvetica", textAnchor="end"))
+
+    # ── linha de mínimo ───────────────────────────────────────────────────────
+    d.add(Line(pad_l, y6, pad_l + w, y6,
+               strokeColor=_C["verm"], strokeWidth=1.0,
+               strokeDashArray=[4, 3]))
+    d.add(String(pad_l + w + 2, y6 - 3, "6",
+                 fontSize=5.5, fillColor=_C["verm"], fontName="Helvetica-Bold"))
+
+    # ── EMA (tendência) ───────────────────────────────────────────────────────
+    alpha = 2.0 / (4 + 1)
+    ema = [notas[0]]
+    for v in notas[1:]:
+        ema.append(alpha * v + (1 - alpha) * ema[-1])
+    if n > 1:
+        for i in range(n - 1):
+            d.add(Line(_x(i), _y(ema[i]), _x(i + 1), _y(ema[i + 1]),
+                       strokeColor=_C["amarelo"], strokeWidth=1.3,
+                       strokeDashArray=[3, 2]))
+
+    # ── linha principal ───────────────────────────────────────────────────────
+    if n > 1:
+        for i in range(n - 1):
+            d.add(Line(_x(i), _y(notas[i]), _x(i + 1), _y(notas[i + 1]),
+                       strokeColor=_C["azul"], strokeWidth=1.8))
+
+    # ── pontos + valores numéricos ────────────────────────────────────────────
+    for i, v in enumerate(notas):
+        cor = _cor_nota_local(v)
+        px, py = _x(i), _y(v)
+        d.add(Circle(px, py, 3.8,
+                     fillColor=cor, strokeColor=colors.white, strokeWidth=1.0))
+        # Alterna posição do rótulo (acima/abaixo) para evitar colisão
+        acima = py < _y(9.0)
+        oy = 7 if acima else -9
+        d.add(String(px, py + oy, f"{v:.1f}",
+                     fontSize=6.5, fillColor=cor,
+                     fontName="Helvetica-Bold", textAnchor="middle"))
+
+    # ── labels de data no eixo X ──────────────────────────────────────────────
+    datas = df_plot["Data"].dt.strftime("%d/%m").tolist()
+    contagem: dict = {}
+    for i, dt in enumerate(datas):
+        contagem[dt] = contagem.get(dt, 0) + 1
+        # Para datas repetidas no mesmo dia: "27/05", "27/05·2", ...
+        label = dt if contagem[dt] == 1 else f"{dt}·{contagem[dt]}"
+        px = _x(i)
+        d.add(Line(px, pad_b, px, pad_b - 3,
+                   strokeColor=_C["cinza3"], strokeWidth=0.5))
+        d.add(String(px, pad_b - 12, label,
+                     fontSize=5.5, fillColor=_C["texto2"],
+                     fontName="Helvetica", textAnchor="middle"))
+
+    # ── eixo X ────────────────────────────────────────────────────────────────
+    d.add(Line(pad_l, pad_b, pad_l + w, pad_b,
+               strokeColor=_C["cinza3"], strokeWidth=0.6))
+
+    # ── legenda compacta ──────────────────────────────────────────────────────
+    leg_y = altura - 8
+    d.add(Line(pad_l, leg_y, pad_l + 14, leg_y,
+               strokeColor=_C["azul"], strokeWidth=1.8))
+    d.add(String(pad_l + 17, leg_y - 3, "Notas",
+                 fontSize=6, fillColor=_C["texto2"], fontName="Helvetica"))
+    d.add(Line(pad_l + 50, leg_y, pad_l + 64, leg_y,
+               strokeColor=_C["amarelo"], strokeWidth=1.3,
+               strokeDashArray=[3, 2]))
+    d.add(String(pad_l + 67, leg_y - 3, "Tendência (EMA)",
+                 fontSize=6, fillColor=_C["texto2"], fontName="Helvetica"))
+
+    return d
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BAR CHART BIMESTRAL — valores anotados, cores, linha de tendência
+# ─────────────────────────────────────────────────────────────────────────────
+def _pdf_bar_bimestre(
+    bim_df: pd.DataFrame,
+    largura: float = 220,
+    altura: float = 165,
+) -> Drawing:
+    """Barras bimestrais com valores, cores por desempenho e tendência."""
+    if bim_df.empty:
+        return Drawing(largura, altura)
+
+    d = Drawing(largura, altura)
+    medias = [float(v) for v in bim_df["Média"].tolist()]
+    labels = bim_df["Semana"].tolist()
+    n = len(medias)
+
+    pad_l, pad_r, pad_b, pad_t = 30, 10, 34, 14
+    w = largura - pad_l - pad_r
+    h = altura  - pad_b - pad_t
+
+    gap   = w / n
+    bar_w = min(gap * 0.65, 22.0)
+
+    # ── grade horizontal ──────────────────────────────────────────────────────
+    for nv in [2, 4, 6, 8, 10]:
+        yg = pad_b + (nv / 10.0) * h
+        d.add(Line(pad_l, yg, pad_l + w, yg,
+                   strokeColor=_C["cinza2"], strokeWidth=0.4))
+        d.add(String(pad_l - 3, yg - 3, str(nv),
+                     fontSize=6, fillColor=_C["cinza4"],
+                     fontName="Helvetica", textAnchor="end"))
+
+    # ── linha de mínimo ───────────────────────────────────────────────────────
+    y6 = pad_b + (NOTA_MINIMA / 10.0) * h
+    d.add(Line(pad_l, y6, pad_l + w, y6,
+               strokeColor=_C["verm"], strokeWidth=1.0,
+               strokeDashArray=[4, 3]))
+
+    # ── eixo base ────────────────────────────────────────────────────────────
+    d.add(Line(pad_l, pad_b, pad_l + w, pad_b,
+               strokeColor=_C["cinza3"], strokeWidth=0.6))
+
+    # ── centros de cada barra ─────────────────────────────────────────────────
+    def _cx(i): return pad_l + gap * i + gap / 2
+
+    # ── linha de tendência entre topos ────────────────────────────────────────
+    for i in range(n - 1):
+        y1 = pad_b + (medias[i]     / 10.0) * h
+        y2 = pad_b + (medias[i + 1] / 10.0) * h
+        d.add(Line(_cx(i), y1, _cx(i + 1), y2,
+                   strokeColor=_C["azul"], strokeWidth=1.2,
+                   strokeDashArray=[3, 2]))
+
+    # ── barras ────────────────────────────────────────────────────────────────
+    tem_total = "Total" in bim_df.columns
+    for i, m in enumerate(medias):
+        cor = _cor_nota_local(m)
+        cx  = _cx(i)
+        bx  = cx - bar_w / 2
+        bh  = (m / 10.0) * h
+
+        # barra preenchida com leve transparência
+        d.add(Rect(bx, pad_b, bar_w, bh,
+                   fillColor=colors.HexColor(cor.hexval()[:7] + "BB"),
+                   strokeColor=cor, strokeWidth=0.8))
+
+        # valor: dentro se a barra for alta o suficiente, fora caso contrário
+        if bh >= 14:
+            d.add(String(cx, pad_b + bh - 10, f"{m:.1f}",
+                         fontSize=7, fillColor=colors.white,
+                         fontName="Helvetica-Bold", textAnchor="middle"))
+        else:
+            d.add(String(cx, pad_b + bh + 3, f"{m:.1f}",
+                         fontSize=7, fillColor=cor,
+                         fontName="Helvetica-Bold", textAnchor="middle"))
+
+        # ponto no topo da barra
+        d.add(Circle(cx, pad_b + bh, 3,
+                     fillColor=cor, strokeColor=colors.white, strokeWidth=0.8))
+
+        # label da semana — remove prefixo "2026-" / "2025-" para economizar espaço
+        lbl_curto = (labels[i]
+                     .replace("2026-", "")
+                     .replace("2025-", "")
+                     .replace("2024-", ""))
+        d.add(String(cx, pad_b - 11, lbl_curto,
+                     fontSize=6, fillColor=_C["texto2"],
+                     fontName="Helvetica", textAnchor="middle"))
+
+        # contagem de avaliações por semana
+        if tem_total:
+            total = int(bim_df.iloc[i].get("Total", 0))
+            d.add(String(cx, pad_b - 20, f"({total} av.)",
+                         fontSize=5.5, fillColor=_C["cinza4"],
+                         fontName="Helvetica", textAnchor="middle"))
+
+    return d

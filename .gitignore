@@ -1,0 +1,41 @@
+# Replit internals — nunca devem ir pro git
+.local/
+.replit
+
+# Cache da IA
+.ia_cache/
+
+# Ambientes virtuais
+.venv/
+.venv-1/
+venv/
+
+# Secrets (NUNCA subir isso)
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Pytest
+.pytest_cache/
+
+# Excel/PDF gerados
+*.xlsx
+*.pdf
+
+# Outros (rascunhos antigos)
+codigo antigo.txt
+*.spec

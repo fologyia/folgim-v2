@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Avaliação — Visão Geral</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0D1117;
+  --ink2: #3D4451;
+  --ink3: #8892A4;
+  --paper: #F7F6F2;
+  --paper2: #EEECEA;
+  --line: #DDD9D3;
+
+  --red:   #C0392B; --red-bg:   #FDF0EF;
+  --amber: #C07A00; --amber-bg: #FFF8ED;
+  --blue:  #1A56A0; --blue-bg:  #EEF4FF;
+  --green: #1A7A4A; --green-bg: #EDFAF3;
+
+  --fazer: #1A56A0;
+  --saber: #6B3FA0;
+  --comp:  #C07A00;
+
+  --r: 12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── PAGE ── */
+.page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 48px 32px 80px;
+}
+
+/* ── HEADER ── */
+.masthead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 20px;
+  margin-bottom: 48px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.masthead-left { display: flex; flex-direction: column; gap: 4px; }
+.kicker {
+  font-size: .68rem; font-weight: 700; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--ink3);
+  display: flex; align-items: center; gap: 8px;
+}
+.kicker::before { content:''; width: 20px; height: 2px; background: var(--ink); }
+h1 {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  line-height: 1.1;
+  color: var(--ink);
+  letter-spacing: -.02em;
+}
+h1 em { font-style: italic; color: var(--blue); }
+.masthead-meta {
+  font-size: .76rem; color: var(--ink3);
+  text-align: right; line-height: 1.8;
+}
+
+/* ── INTRO ── */
+.intro-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+  margin-bottom: 48px;
+}
+.intro-cell {
+  background: white;
+  padding: 20px 22px;
+}
+.intro-cell-label {
+  font-size: .62rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--ink3); margin-bottom: 6px;
+}
+.intro-cell-val {
+  font-size: 1.1rem; font-weight: 600; color: var(--ink);
+  line-height: 1.3;
+}
+.intro-cell-sub { font-size: .76rem; color: var(--ink3); margin-top: 3px; }
+
+/* ── SECTION HEADERS ── */
+.sec-label {
+  font-size: .62rem; font-weight: 700; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--ink3);
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.sec-label::after { content:''; flex: 1; height: 1px; background: var(--line); }
+.sec-title {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.5rem; letter-spacing: -.01em;
+  color: var(--ink); margin-bottom: 20px;
+}
+
+/* ── SECTION BLOCK ── */
+.section { margin-bottom: 52px; }
+
+/* ── VETORES ── */
+.vetores-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.vetor-card {
+  border-radius: var(--r);
+  border: 1.5px solid;
+  padding: 22px 20px;
+  position: relative;
+  overflow: hidden;
+}
+.vetor-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+.vc-fazer { border-color: rgba(26,86,160,.25); background: #F5F8FF; }
+.vc-fazer::before { background: var(--fazer); }
+.vc-saber { border-color: rgba(107,63,160,.25); background: #F8F5FF; }
+.vc-saber::before { background: var(--saber); }
+.vc-comp  { border-color: rgba(192,122,0,.25); background: #FFFBF5; }
+.vc-comp::before  { background: var(--comp); }
+
+.vc-peso {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 2.4rem; line-height: 1; font-weight: 400;
+  margin-bottom: 4px;
+}
+.vc-fazer .vc-peso { color: var(--fazer); }
+.vc-saber .vc-peso { color: var(--saber); }
+.vc-comp  .vc-peso { color: var(--comp); }
+
+.vc-nome { font-size: .95rem; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
+.vc-desc { font-size: .76rem; color: var(--ink2); line-height: 1.6; margin-bottom: 14px; }
+.vc-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.vc-tag {
+  font-size: .63rem; font-weight: 600; padding: 3px 8px;
+  border-radius: 4px; letter-spacing: .02em;
+}
+.vc-fazer .vc-tag { background: rgba(26,86,160,.1); color: var(--fazer); }
+.vc-saber .vc-tag { background: rgba(107,63,160,.1); color: var(--saber); }
+.vc-comp  .vc-tag { background: rgba(192,122,0,.1);  color: var(--comp); }
+
+/* ── FORMULA ── */
+.formula-strip {
+  background: var(--ink);
+  border-radius: var(--r);
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.formula-part {
+  display: flex; align-items: baseline; gap: 4px;
+  font-size: .88rem; font-weight: 500; color: rgba(255,255,255,.55);
+}
+.formula-num { font-family: 'DM Serif Display', Georgia, serif; font-size: 1.3rem; color: #fff; }
+.formula-op  { font-size: 1rem; color: rgba(255,255,255,.3); margin: 0 4px; }
+.formula-eq  { font-size: 1rem; color: rgba(255,255,255,.4); margin: 0 8px; }
+.formula-result {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.1rem; color: #fff; font-weight: 400;
+  background: rgba(255,255,255,.12); padding: 4px 14px;
+  border-radius: 6px;
+}
+
+/* ── NIVEIS ── */
+.niveis-track {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border-radius: var(--r);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  margin-bottom: 20px;
+}
+.nivel {
+  padding: 20px 18px;
+  border-right: 1px solid;
+  position: relative;
+}
+.nivel:last-child { border-right: none; }
+.n-insuf { background: var(--red-bg);   border-color: rgba(192,57,43,.1); }
+.n-dev   { background: var(--amber-bg); border-color: rgba(192,122,0,.1); }
+.n-sat   { background: var(--blue-bg);  border-color: rgba(26,86,160,.1); }
+.n-exc   { background: var(--green-bg); border-color: rgba(26,122,74,.1); }
+
+.nivel-bar {
+  height: 3px; border-radius: 2px; margin-bottom: 12px;
+}
+.n-insuf .nivel-bar { background: var(--red); }
+.n-dev   .nivel-bar { background: var(--amber); }
+.n-sat   .nivel-bar { background: var(--blue); }
+.n-exc   .nivel-bar { background: var(--green); }
+
+.nivel-range {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.4rem; line-height: 1; margin-bottom: 4px;
+}
+.n-insuf .nivel-range { color: var(--red); }
+.n-dev   .nivel-range { color: var(--amber); }
+.n-sat   .nivel-range { color: var(--blue); }
+.n-exc   .nivel-range { color: var(--green); }
+
+.nivel-nome {
+  font-size: .7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; margin-bottom: 10px;
+}
+.n-insuf .nivel-nome { color: var(--red); }
+.n-dev   .nivel-nome { color: var(--amber); }
+.n-sat   .nivel-nome { color: var(--blue); }
+.n-exc   .nivel-nome { color: var(--green); }
+
+.nivel-desc { font-size: .73rem; color: var(--ink2); line-height: 1.6; margin-bottom: 10px; }
+.nivel-sinal {
+  font-size: .68rem; font-style: italic; color: var(--ink3); line-height: 1.5;
+  border-top: 1px solid; padding-top: 8px;
+}
+.n-insuf .nivel-sinal { border-color: rgba(192,57,43,.15); }
+.n-dev   .nivel-sinal { border-color: rgba(192,122,0,.15); }
+.n-sat   .nivel-sinal { border-color: rgba(26,86,160,.15); }
+.n-exc   .nivel-sinal { border-color: rgba(26,122,74,.15); }
+
+/* ── CRITERIOS ── */
+.crit-matrix {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+.crit-card {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 16px 16px;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow .2s;
+}
+.crit-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.08); }
+.crit-card::after {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+}
+.cc-fazer::after { background: var(--fazer); }
+.cc-saber::after { background: var(--saber); }
+.cc-comp::after  { background: var(--comp); }
+
+.cc-vetor {
+  font-size: .58rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; margin-bottom: 5px;
+}
+.cc-fazer .cc-vetor { color: var(--fazer); }
+.cc-saber .cc-vetor { color: var(--saber); }
+.cc-comp  .cc-vetor { color: var(--comp); }
+
+.cc-nome { font-size: .88rem; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+
+.cc-rubrica { display: flex; flex-direction: column; gap: 3px; }
+.rubrica-row {
+  display: flex; align-items: flex-start; gap: 6px;
+  font-size: .68rem; color: var(--ink2); line-height: 1.4;
+}
+.rb-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  flex-shrink: 0; margin-top: 3px;
+}
+.rb-1 { background: var(--red); }
+.rb-2 { background: var(--amber); }
+.rb-3 { background: var(--blue); }
+.rb-4 { background: var(--green); }
+
+/* ── INSTRUMENTOS ── */
+.inst-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+.inst-card {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 16px 14px;
+  text-align: center;
+  transition: box-shadow .2s, transform .15s;
+}
+.inst-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.07); transform: translateY(-2px); }
+.inst-icon { font-size: 1.6rem; margin-bottom: 8px; }
+.inst-nome { font-size: .76rem; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.inst-desc { font-size: .63rem; color: var(--ink3); line-height: 1.5; margin-bottom: 8px; }
+.inst-vets { display: flex; gap: 3px; justify-content: center; flex-wrap: wrap; }
+.inst-vet {
+  font-size: .56rem; font-weight: 700; padding: 2px 5px;
+  border-radius: 3px; text-transform: uppercase; letter-spacing: .04em;
+}
+.iv-f { background: rgba(26,86,160,.1);  color: var(--fazer); }
+.iv-s { background: rgba(107,63,160,.1); color: var(--saber); }
+.iv-c { background: rgba(192,122,0,.1);  color: var(--comp); }
+
+/* ── FLUXO ── */
+.fluxo {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  position: relative;
+  margin-bottom: 8px;
+}
+.fluxo::before {
+  content: '';
+  position: absolute;
+  top: 28px; left: 10%; right: 10%;
+  height: 2px;
+  background: repeating-linear-gradient(90deg, var(--line) 0, var(--line) 8px, transparent 8px, transparent 16px);
+  z-index: 0;
+}
+.fluxo-step {
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center; padding: 0 8px;
+  position: relative; z-index: 1;
+}
+.fluxo-num {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--ink); color: white;
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 1.4rem;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 10px;
+  box-shadow: 0 0 0 4px var(--paper);
+}
+.fluxo-titulo { font-size: .78rem; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.fluxo-desc   { font-size: .65rem; color: var(--ink3); line-height: 1.5; }
+
+/* ── TAGS ── */
+.tags-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.tags-col { }
+.tags-col-title {
+  font-size: .65rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.tct-pos { color: var(--green); }
+.tct-neg { color: var(--red); }
+.tags-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-chip {
+  font-size: .72rem; font-weight: 500; padding: 5px 10px;
+  border-radius: 50px; border: 1px solid;
+}
+.tag-pos { background: var(--green-bg); border-color: rgba(26,122,74,.2); color: var(--green); }
+.tag-neg { background: var(--red-bg);   border-color: rgba(192,57,43,.2);  color: var(--red); }
+
+/* ── PLANILHA ── */
+.sheet-map {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.sheet-tab {
+  border-radius: var(--r);
+  border: 1.5px solid var(--line);
+  background: white;
+  overflow: hidden;
+}
+.sheet-tab-header {
+  padding: 10px 14px;
+  font-size: .72rem; font-weight: 700;
+  display: flex; align-items: center; gap: 7px;
+  border-bottom: 1px solid var(--line);
+}
+.sth-alunos  { background: #EEF4FF; color: var(--blue); }
+.sth-config  { background: #F8F5FF; color: var(--saber); }
+.sth-result  { background: #EDFAF3; color: var(--green); }
+.sth-relat   { background: #FFF8ED; color: var(--amber); }
+.sheet-cols {
+  padding: 10px 14px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.sheet-col {
+  display: flex; align-items: flex-start; gap: 7px;
+  font-size: .68rem; color: var(--ink2); line-height: 1.5;
+}
+.sc-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--ink3); flex-shrink: 0; margin-top: 4px;
+}
+.sheet-note {
+  padding: 8px 14px;
+  font-size: .62rem; color: var(--ink3);
+  border-top: 1px solid var(--line);
+  background: var(--paper);
+  font-style: italic;
+}
+
+/* ── PRINCÍPIOS ── */
+.principios-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.principio {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 18px 18px;
+}
+.pr-num {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 2rem; color: var(--line); line-height: 1;
+  margin-bottom: 8px;
+}
+.pr-titulo { font-size: .88rem; font-weight: 700; color: var(--ink); margin-bottom: 5px; }
+.pr-desc { font-size: .73rem; color: var(--ink2); line-height: 1.6; }
+
+/* ── FOOTER ── */
+.footer {
+  border-top: 2px solid var(--ink);
+  padding-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.footer-left { font-size: .72rem; color: var(--ink3); }
+.footer-badge {
+  background: var(--ink); color: white;
+  font-size: .65rem; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 5px 12px; border-radius: 4px;
+}
+
+/* ── DIVIDER ── */
+.divider {
+  height: 1px; background: var(--line); margin: 40px 0;
+}
+
+/* ── ANIMAÇÕES ── */
+@keyframes fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+.page > * { animation: fadeIn .5s ease both; }
+.page > *:nth-child(1) { animation-delay: .05s; }
+.page > *:nth-child(2) { animation-delay: .10s; }
+.page > *:nth-child(3) { animation-delay: .15s; }
+.page > *:nth-child(4) { animation-delay: .20s; }
+.page > *:nth-child(5) { animation-delay: .25s; }
+.page > *:nth-child(6) { animation-delay: .30s; }
+.page > *:nth-child(7) { animation-delay: .35s; }
+.page > *:nth-child(n+8) { animation-delay: .40s; }
+
+@media (max-width: 768px) {
+  .page { padding: 24px 16px 60px; }
+  .vetores-grid, .niveis-track, .crit-matrix,
+  .inst-grid, .fluxo, .sheet-map, .principios-grid { grid-template-columns: 1fr; }
+  .intro-grid { grid-template-columns: 1fr; }
+  .tags-grid { grid-template-columns: 1fr; }
+  .fluxo::before { display: none; }
+  h1 { font-size: 1.6rem; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- MASTHEAD -->
+  <div class="masthead">
+    <div class="masthead-left">
+      <div class="kicker">Educação Técnica Profissional</div>
+      <h1>Sistema de <em>Avaliação</em><br>por Competências</h1>
+    </div>
+    <div class="masthead-meta">
+      Aplicável a qualquer<br>curso técnico<br>
+      <strong style="color:var(--ink)">SENAI · Modelo Universal</strong>
+    </div>
+  </div>
+
+  <!-- INTRO STATS -->
+  <div class="intro-grid">
+    <div class="intro-cell">
+      <div class="intro-cell-label">Fundamento</div>
+      <div class="intro-cell-val">Avaliação por Competências</div>
+      <div class="intro-cell-sub">Aluno comparado com critérios objetivos, não com a turma</div>
+    </div>
+    <div class="intro-cell">
+      <div class="intro-cell-label">Método Anti-Subjetividade</div>
+      <div class="intro-cell-val">Rubricas Analíticas</div>
+      <div class="intro-cell-sub">Descritores fixos por nível — professor seleciona, não inventa</div>
+    </div>
+    <div class="intro-cell">
+      <div class="intro-cell-label">Cobertura da Nota Final</div>
+      <div class="intro-cell-val">3 Dimensões obrigatórias</div>
+      <div class="intro-cell-sub">Fazer · Saber · Comportamento — cada uma com peso fixo</div>
+    </div>
+  </div>
+
+  <!-- FLUXO -->
+  <div class="section">
+    <div class="sec-label">Como funciona</div>
+    <div class="sec-title">Fluxo de uma avaliação</div>
+    <div class="fluxo">
+      <div class="fluxo-step">
+        <div class="fluxo-num">1</div>
+        <div class="fluxo-titulo">Definir contexto</div>
+        <div class="fluxo-desc">Professor escolhe turma, UC, vetor e instrumento</div>
+      </div>
+      <div class="fluxo-step">
+        <div class="fluxo-num">2</div>
+        <div class="fluxo-titulo">Observar o aluno</div>
+        <div class="fluxo-desc">Durante a aula, atividade prática ou prova</div>
+      </div>
+      <div class="fluxo-step">
+        <div class="fluxo-num">3</div>
+        <div class="fluxo-titulo">Selecionar nível</div>
+        <div class="fluxo-desc">1 a 4 baseado em comportamentos observáveis</div>
+      </div>
+      <div class="fluxo-step">
+        <div class="fluxo-num">4</div>
+        <div class="fluxo-titulo">Registrar + Tag</div>
+        <div class="fluxo-desc">Nota calculada automaticamente + observação opcional</div>
+      </div>
+      <div class="fluxo-step">
+        <div class="fluxo-num">5</div>
+        <div class="fluxo-titulo">Gerar relatório</div>
+        <div class="fluxo-desc">Sheets consolida progresso ao longo do módulo</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- VETORES -->
+  <div class="section">
+    <div class="sec-label">Estrutura da nota</div>
+    <div class="sec-title">Os três vetores de avaliação</div>
+    <div class="vetores-grid">
+      <div class="vetor-card vc-fazer">
+        <div class="vc-peso">40%</div>
+        <div class="vc-nome">⚙️ Fazer</div>
+        <div class="vc-desc">Execução prática e técnica. O que o aluno é capaz de realizar com as mãos e ferramentas. Avaliado por observação direta durante atividades.</div>
+        <div class="vc-tags">
+          <span class="vc-tag">Exatidão Dimensional</span>
+          <span class="vc-tag">Organização / 5S</span>
+          <span class="vc-tag">Planejamento</span>
+        </div>
+      </div>
+      <div class="vetor-card vc-saber">
+        <div class="vc-peso">30%</div>
+        <div class="vc-nome">🧠 Saber</div>
+        <div class="vc-desc">Conhecimento teórico e capacidade de aplicar conceitos. O que o aluno entende e consegue explicar. Avaliado por provas, quizzes e apresentações.</div>
+        <div class="vc-tags">
+          <span class="vc-tag">Retenção Teórica</span>
+          <span class="vc-tag">Resolução de Problemas</span>
+          <span class="vc-tag">Normas</span>
+        </div>
+      </div>
+      <div class="vetor-card vc-comp">
+        <div class="vc-peso">30%</div>
+        <div class="vc-nome">🤝 Comportamento</div>
+        <div class="vc-desc">Postura profissional e relações interpessoais. Como o aluno se porta no ambiente de trabalho. Requer observação ao longo de múltiplas aulas.</div>
+        <div class="vc-tags">
+          <span class="vc-tag">Segurança e EPI</span>
+          <span class="vc-tag">Trabalho em Equipe</span>
+          <span class="vc-tag">Pontualidade</span>
+        </div>
+      </div>
+    </div>
+    <div class="formula-strip">
+      <div class="formula-part"><span class="formula-num">Nota Fazer</span> <span>× 0,40</span></div>
+      <span class="formula-op">+</span>
+      <div class="formula-part"><span class="formula-num">Nota Saber</span> <span>× 0,30</span></div>
+      <span class="formula-op">+</span>
+      <div class="formula-part"><span class="formula-num">Nota Comp.</span> <span>× 0,30</span></div>
+      <span class="formula-eq">=</span>
+      <div class="formula-result">Nota Final 0–10</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- NÍVEIS -->
+  <div class="section">
+    <div class="sec-label">Rubrica de desempenho</div>
+    <div class="sec-title">Os quatro níveis de cada critério</div>
+    <div class="niveis-track">
+      <div class="nivel n-insuf">
+        <div class="nivel-bar"></div>
+        <div class="nivel-range">0 – 4</div>
+        <div class="nivel-nome">Insatisfatório</div>
+        <div class="nivel-desc">Não atinge o mínimo esperado. Precisa de intervenção direta e constante para executar a tarefa.</div>
+        <div class="nivel-sinal">Não executa sem supervisão · Ignora normas · Não percebe os próprios erros</div>
+      </div>
+      <div class="nivel n-dev">
+        <div class="nivel-bar"></div>
+        <div class="nivel-range">4,5 – 6</div>
+        <div class="nivel-nome">Em Desenvolvimento</div>
+        <div class="nivel-desc">Atinge parcialmente o esperado. Executa com apoio e orientação, mas ainda comete erros recorrentes.</div>
+        <div class="nivel-sinal">Corrige quando orientado · Usa EPI com lembretes · Lógica parcial</div>
+      </div>
+      <div class="nivel n-sat">
+        <div class="nivel-bar"></div>
+        <div class="nivel-range">6,5 – 8,5</div>
+        <div class="nivel-nome">Satisfatório</div>
+        <div class="nivel-desc">Atinge o esperado na maioria das situações. Executa com autonomia, com pequenas correções pontuais.</div>
+        <div class="nivel-sinal">Autônomo na rotina · Falhas pontuais · Dentro da tolerância</div>
+      </div>
+      <div class="nivel n-exc">
+        <div class="nivel-bar"></div>
+        <div class="nivel-range">9 – 10</div>
+        <div class="nivel-nome">Excelente</div>
+        <div class="nivel-desc">Supera o esperado. Executa com precisão e autonomia total, antecipa problemas e lidera pelo exemplo.</div>
+        <div class="nivel-sinal">Sem lembretes · Antecipa falhas · Referência para a turma</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- CRITÉRIOS -->
+  <div class="section">
+    <div class="sec-label">O que é avaliado em cada vetor</div>
+    <div class="sec-title">Critérios com descritores por nível</div>
+    <div class="crit-matrix">
+
+      <div class="crit-card cc-fazer">
+        <div class="cc-vetor">⚙️ Fazer · 40%</div>
+        <div class="cc-nome">Exatidão Dimensional</div>
+        <div class="cc-rubrica">
+          <div class="rubrica-row"><span class="rb-dot rb-4"></span>Mede com precisão total, dentro da tolerância, sem supervisão</div>
+          <div class="rubrica-row"><span class="rb-dot rb-3"></span>Dentro da tolerância na maioria, com ajustes pontuais</div>
+          <div class="rubrica-row"><span class="rb-dot rb-2"></span>Erros frequentes, corrige quando orientado</div>
+          <div class="rubrica-row"><span class="rb-dot rb-1"></span>Medições recorrentemente fora da tolerância</div>
+        </div>
+      </div>
+
+      <div class="crit-card cc-fazer">
+        <div class="cc-vetor">⚙️ Fazer · 40%</div>
+        <div class="cc-nome">Organização / 5S</div>
+        <div class="cc-rubrica">
+          <div class="rubrica-row"><span class="rb-dot rb-4"></span>Mantém bancada organizada durante e após, sem lembretes</div>
+          <div class="rubrica-row"><span class="rb-dot rb-3"></span>Organiza ao final, com pequenas falhas pontuais</div>
+          <div class="rubrica-row"><span class="rb-dot rb-2"></span>Organiza somente quando solicitado</div>
+          <div class="rubrica-row"><span class="rb-dot rb-1"></span>Bancada desorganizada, ferramentas fora do lugar</div>
+        </div>
+      </div>
+
+      <div class="crit-card cc-fazer">
+        <div class="cc-vetor">⚙️ Fazer · 40%</div>
+        <div class="cc-nome">Planejamento / Lógica</div>
+        <div class="cc-rubrica">
+          <div class="rubrica-row"><span class="rb-dot rb-4"></span>Planeja antes de iniciar, segue sequência correta, antecipa</div>
+          <div class="rubrica-row"><span class="rb-dot rb-3"></span>Segue sequência lógica com poucos desvios</div>
+          <div class="rubrica-row"><span class="rb-dot rb-2"></span>Inicia sem planejar, corrige quando orientado</div>
+          <div class="rubrica-row"><span class="rb-dot rb-1"></span>Executa sem lógica, pula etapas, intervenção constante</div>
+        </div>
+      </div>
+
+      <div class="crit-card cc-saber">
+        <div class="cc-vetor">🧠 Saber · 30%</div>
+        <div class="cc-nome">Retenção Teórica</div>
+        <div class="cc-rubrica">
+          <div class="rubrica-row"><span class="rb-dot rb-4"></span>Explica conceitos com clareza, relaciona teoria e prática</div>
+          <div class="rubrica-row"><span class="rb-dot rb-3"></span>Compreende os conceitos principais com pequenas lacunas</div>
+          <div class="rubrica-row"><span class="rb-dot rb-2"></span>Responde só com apoio de material ou quando guiado</div>
+          <div class="rubrica-row"><span class="rb-dot rb-1"></span>Não demonstra compreensão dos conceitos básicos</div>
+        </div>
+      </div>
+
+      <div class="crit-card cc-saber">
+        <div class="cc-vetor">🧠 Saber · 30%</div>
+        <div class="cc-nome">Resolução de Problemas</div>
+        <div class="cc-rubrica">
+          <div class="rubrica-row"><span class="rb-dot rb-4"></span>Identifica e resolve com autonomia, propõe soluções</div>
+          <div class="rubrica-row"><span class="rb-dot rb-3"></span>Identifica e resolve com pequena orientação</div>
+          <div class="rubrica-row"><span class="rb-dot rb-2"></span>Identifica, mas precisa de apoio para resolver</div>
+          <div class="rubrica-row"><span class="rb-dot rb-1"></span>Não identifica nem resolve sem intervenção direta</div>
+        </div>
+      </div>
+
+      <div class="crit-card cc-saber">
+        <div class="cc-vetor">🧠 Saber · 30%</div>
+        <div class="cc-nome">Aplicação de Normas</div>
+        <div class="cc-rubrica">
+          <div class="rubrica-row"><span class="rb-dot rb-4"></span>Aplica normas corretamente em toda atividade, sem consulta</div>
+          <div class="rubrica-row"><span class="rb-dot rb-3"></span>Aplica na maioria das situações, com pequenos esquecimentos</div>
+          <div class="rubrica-row"><span class="rb-dot rb-2"></span>Aplica somente quando lembrado</div>
+          <div class="rubrica-row"><span class="rb-dot rb-1"></span>Ignora normas recorrentemente mesmo após orientação</div>
+        </div>
+      </div>
+
+      <div class="crit-card cc-comp">
+        <div class="cc-vetor">🤝 Comportamento · 30%</div>
+        <div class="cc-nome">Segurança e EPI</div>
+        <div class="cc-rubrica">
+          <div class="rubrica-row"><span class="rb-dot rb-4"></span>Usa todos os EPIs corretamente e de forma autônoma</div>
+          <div class="rubrica-row"><span class="rb-dot rb-3"></span>Usa corretamente na maioria do tempo, falhas pontuais</div>
+          <div class="rubrica-row"><span class="rb-dot rb-2"></span>Usa somente quando solicitado</div>
+          <div class="rubrica-row"><span class="rb-dot rb-1"></span>Não usa mesmo após orientação — risco real</div>
+        </div>
+      </div>
+
+      <div class="crit-card cc-comp">
+        <div class="cc-vetor">🤝 Comportamento · 30%</div>
+        <div class="cc-nome">Trabalho em Equipe</div>
+        <div class="cc-rubrica">
+          <div class="rubrica-row"><span class="rb-dot rb-4"></span>Colabora ativamente, distribui tarefas, apoia colegas</div>
+          <div class="rubrica-row"><span class="rb-dot rb-3"></span>Participa e contribui com pequenas dificuldades</div>
+          <div class="rubrica-row"><span class="rb-dot rb-2"></span>Participa quando solicitado, tende ao isolamento</div>
+          <div class="rubrica-row"><span class="rb-dot rb-1"></span>Não colabora, prejudica o grupo</div>
+        </div>
+      </div>
+
+      <div class="crit-card cc-comp">
+        <div class="cc-vetor">🤝 Comportamento · 30%</div>
+        <div class="cc-nome">Proatividade</div>
+        <div class="cc-rubrica">
+          <div class="rubrica-row"><span class="rb-dot rb-4"></span>Antecipa tarefas, busca melhorias sem ser solicitado</div>
+          <div class="rubrica-row"><span class="rb-dot rb-3"></span>Executa além do pedido quando há oportunidade clara</div>
+          <div class="rubrica-row"><span class="rb-dot rb-2"></span>Executa somente o que foi explicitamente solicitado</div>
+          <div class="rubrica-row"><span class="rb-dot rb-1"></span>Espera instrução para cada micro-passo da tarefa</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- INSTRUMENTOS -->
+  <div class="section">
+    <div class="sec-label">Como coletar evidências</div>
+    <div class="sec-title">Instrumentos de avaliação</div>
+    <div class="inst-grid">
+      <div class="inst-card">
+        <div class="inst-icon">👁️</div>
+        <div class="inst-nome">Observação Oficina</div>
+        <div class="inst-desc">Checklist durante atividade prática com 4–6 itens fixos</div>
+        <div class="inst-vets">
+          <span class="inst-vet iv-f">Fazer</span>
+          <span class="inst-vet iv-c">Comp.</span>
+        </div>
+      </div>
+      <div class="inst-card">
+        <div class="inst-icon">📝</div>
+        <div class="inst-nome">Micro-Quiz</div>
+        <div class="inst-desc">5 questões rápidas no início ou fim da aula</div>
+        <div class="inst-vets">
+          <span class="inst-vet iv-s">Saber</span>
+        </div>
+      </div>
+      <div class="inst-card">
+        <div class="inst-icon">🔧</div>
+        <div class="inst-nome">Projeto Prático</div>
+        <div class="inst-desc">Entregável avaliado com rubrica de 4 dimensões</div>
+        <div class="inst-vets">
+          <span class="inst-vet iv-f">Fazer</span>
+          <span class="inst-vet iv-s">Saber</span>
+        </div>
+      </div>
+      <div class="inst-card">
+        <div class="inst-icon">🎤</div>
+        <div class="inst-nome">Apresentação Pitch</div>
+        <div class="inst-desc">Defesa oral de solução para problema real</div>
+        <div class="inst-vets">
+          <span class="inst-vet iv-s">Saber</span>
+          <span class="inst-vet iv-c">Comp.</span>
+        </div>
+      </div>
+      <div class="inst-card">
+        <div class="inst-icon">📄</div>
+        <div class="inst-nome">Prova</div>
+        <div class="inst-desc">40% teórico · 35% análise · 25% normas</div>
+        <div class="inst-vets">
+          <span class="inst-vet iv-s">Saber</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- TAGS -->
+  <div class="section">
+    <div class="sec-label">Registro qualitativo</div>
+    <div class="sec-title">Tags de observação</div>
+    <div class="tags-grid">
+      <div class="tags-col">
+        <div class="tags-col-title tct-pos">● Positivas</div>
+        <div class="tags-list">
+          <span class="tag-chip tag-pos">Boa evolução</span>
+          <span class="tag-chip tag-pos">Liderança</span>
+          <span class="tag-chip tag-pos">Esforço notável</span>
+          <span class="tag-chip tag-pos">Proativo</span>
+          <span class="tag-chip tag-pos">Ajudou colegas</span>
+          <span class="tag-chip tag-pos">Criatividade</span>
+          <span class="tag-chip tag-pos">Pontualidade</span>
+        </div>
+      </div>
+      <div class="tags-col">
+        <div class="tags-col-title tct-neg">● Atenção</div>
+        <div class="tags-list">
+          <span class="tag-chip tag-neg">Sem EPI</span>
+          <span class="tag-chip tag-neg">Fora da tolerância</span>
+          <span class="tag-chip tag-neg">Bancada desorganizada</span>
+          <span class="tag-chip tag-neg">Erro procedimental</span>
+          <span class="tag-chip tag-neg">Falta de foco</span>
+          <span class="tag-chip tag-neg">Atraso recorrente</span>
+          <span class="tag-chip tag-neg">Conflito com equipe</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- PLANILHA -->
+  <div class="section">
+    <div class="sec-label">Estrutura de dados</div>
+    <div class="sec-title">Abas necessárias na planilha</div>
+    <div class="sheet-map">
+      <div class="sheet-tab">
+        <div class="sheet-tab-header sth-alunos">📋 Alunos</div>
+        <div class="sheet-cols">
+          <div class="sheet-col"><span class="sc-dot"></span>Nome Completo</div>
+          <div class="sheet-col"><span class="sc-dot"></span>Turma / Curso</div>
+          <div class="sheet-col"><span class="sc-dot"></span>Matrícula (opcional)</div>
+        </div>
+        <div class="sheet-note">Fonte das turmas e alunos do app</div>
+      </div>
+      <div class="sheet-tab">
+        <div class="sheet-tab-header sth-config">⚙️ Configurações</div>
+        <div class="sheet-cols">
+          <div class="sheet-col"><span class="sc-dot"></span>UCs (Unidades Curriculares)</div>
+          <div class="sheet-col"><span class="sc-dot"></span>Critérios</div>
+          <div class="sheet-col"><span class="sc-dot"></span>Vetores</div>
+          <div class="sheet-col"><span class="sc-dot"></span>Instrumentos</div>
+          <div class="sheet-col"><span class="sc-dot"></span>Tags de Observação</div>
+        </div>
+        <div class="sheet-note">Personaliza o app para cada curso</div>
+      </div>
+      <div class="sheet-tab">
+        <div class="sheet-tab-header sth-result">📊 Avaliações</div>
+        <div class="sheet-cols">
+          <div class="sheet-col"><span class="sc-dot"></span>Data</div>
+          <div class="sheet-col"><span class="sc-dot"></span>Turma · Aluno</div>
+          <div class="sheet-col"><span class="sc-dot"></span>UC · Vetor · Instrumento</div>
+          <div class="sheet-col"><span class="sc-dot"></span>Critério · Nota · Nível</div>
+          <div class="sheet-col"><span class="sc-dot"></span>Frequência · Observação</div>
+        </div>
+        <div class="sheet-note">Preenchida automaticamente pelo app</div>
+      </div>
+      <div class="sheet-tab">
+        <div class="sheet-tab-header sth-relat">📈 Relatório</div>
+        <div class="sheet-cols">
+          <div class="sheet-col"><span class="sc-dot"></span>Nota por vetor (média)</div>
+          <div class="sheet-col"><span class="sc-dot"></span>Nota final ponderada</div>
+          <div class="sheet-col"><span class="sc-dot"></span>Evolução por critério</div>
+          <div class="sheet-col"><span class="sc-dot"></span>Frequência acumulada</div>
+        </div>
+        <div class="sheet-note">Fórmulas automáticas via QUERY/SUMIF</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- PRINCÍPIOS -->
+  <div class="section">
+    <div class="sec-label">Base científica</div>
+    <div class="sec-title">Princípios que sustentam o sistema</div>
+    <div class="principios-grid">
+      <div class="principio">
+        <div class="pr-num">01</div>
+        <div class="pr-titulo">Referência Criterial</div>
+        <div class="pr-desc">O aluno é comparado com critérios objetivos, nunca com outros alunos. Isso garante que a nota reflita competência real e não posição relativa na turma.</div>
+      </div>
+      <div class="principio">
+        <div class="pr-num">02</div>
+        <div class="pr-titulo">Triangulação de Evidências</div>
+        <div class="pr-desc">A nota final combina três fontes — Fazer, Saber e Comportamento. Nenhuma dimensão sozinha representa o profissional completo.</div>
+      </div>
+      <div class="principio">
+        <div class="pr-num">03</div>
+        <div class="pr-titulo">Avaliação Formativa</div>
+        <div class="pr-desc">Registros por aula, não só ao final do módulo. O objetivo é corrigir o rumo enquanto ainda há tempo, não apenas certificar ao final.</div>
+      </div>
+      <div class="principio">
+        <div class="pr-num">04</div>
+        <div class="pr-titulo">Descritores Observáveis</div>
+        <div class="pr-desc">Cada nível descreve um comportamento concreto que qualquer professor pode observar da mesma forma. Elimina a subjetividade do "sentimento" do avaliador.</div>
+      </div>
+      <div class="principio">
+        <div class="pr-num">05</div>
+        <div class="pr-titulo">Transparência Prévia</div>
+        <div class="pr-desc">O aluno conhece os critérios antes da atividade. Saber o que será avaliado melhora comprovadamente o desempenho e a autorregulação.</div>
+      </div>
+      <div class="principio">
+        <div class="pr-num">06</div>
+        <div class="pr-titulo">Adaptável por Curso</div>
+        <div class="pr-desc">Os vetores e pesos são universais. Os critérios e UCs mudam conforme o curso — Manutenção, Logística, TI, Gastronomia — sem alterar a estrutura base.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-left">
+      Sistema de Avaliação por Competências · Adaptável para qualquer curso técnico<br>
+      Baseado em: Avaliação Formativa · Rubricas Analíticas · Referência Criterial
+    </div>
+    <div class="footer-badge">SENAI · Modelo Universal v1.0</div>
+  </div>
+
+</div>
+</body>
+</html>

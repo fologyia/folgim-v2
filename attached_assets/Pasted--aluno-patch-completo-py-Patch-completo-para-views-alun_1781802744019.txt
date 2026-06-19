@@ -1,0 +1,235 @@
+"""
+aluno_patch_completo.py
+━━━━━━━━━━━━━━━━━━━━━━━━
+Patch completo para views/aluno.py — resolve o encanamento de dados de
+frequência entre render_aluno_view(), _tab_desempenho() e _tab_frequencia(),
+para que o card de frequência do PDF use os MESMOS números do painel.
+
+RESUMO DA MUDANÇA
+──────────────────
+Hoje, o calendário de presença/falta do aluno (df_freq_aluno_tab) só é
+calculado DENTRO de _tab_frequencia(). _tab_desempenho() (onde está o botão
+de gerar PDF) não tem acesso a ele.
+
+A solução: extrair esse cálculo para uma função auxiliar
+`_montar_calendario_aluno()`, chamá-la UMA VEZ em render_aluno_view(),
+e passar o resultado (df_cal_aluno) para as duas abas via parâmetro.
+
+Isso garante que o IIF do PDF seja idêntico ao que aparece na aba Frequência,
+sem recalcular nada duas vezes.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 1 — Nova função auxiliar (adicionar antes de _tab_frequencia, ou em
+          data/analysis.py se preferir centralizar lá)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"""
+
+TRECHO_1_NOVA_FUNCAO = '''
+def _montar_calendario_aluno(
+    df_freq: pd.DataFrame,
+    aluno_sel: str,
+    datas_globais: list,
+    df_feriados: list = None,
+) -> pd.DataFrame:
+    """
+    Monta o calendário completo de presença/falta/feriado do aluno para um
+    conjunto de datas letivas. Centraliza a lógica que antes vivia só dentro
+    de _tab_frequencia(), para que outras abas (ex: geração de PDF) também
+    possam usá-la sem duplicar código.
+
+    Retorna um DataFrame com colunas: Data, Status, Presente, Aluno.
+    Vazio se não houver datas válidas.
+    """
+    if not datas_globais or len(datas_globais) == 0:
+        return pd.DataFrame()
+
+    todas_datas = sorted(datas_globais)
+
+    df_faltas = (
+        df_freq[df_freq["Aluno"].astype(str).str.strip().str.lower() == str(aluno_sel).strip().lower()]
+        if not df_freq.empty and "Aluno" in df_freq.columns else pd.DataFrame()
+    )
+
+    if "Presente" in df_faltas.columns:
+        pres_bool = df_faltas["Presente"].apply(
+            lambda x: True if str(x).strip().lower() in ['v', 'verdadeiro', 'true', 'presente', 'p', '1', 'sim', 's']
+            else (True if isinstance(x, bool) and x else False)
+        )
+        datas_falta = set(pd.to_datetime(df_faltas[~pres_bool]["Data"], errors="coerce", dayfirst=True).dt.normalize().dropna())
+    elif not df_faltas.empty and "Data" in df_faltas.columns:
+        datas_falta = set(pd.to_datetime(df_faltas["Data"], errors="coerce", dayfirst=True).dt.normalize().dropna())
+    else:
+        datas_falta = set()
+
+    feriados_set = (
+        {pd.to_datetime(d, errors="coerce", dayfirst=True).normalize() for d in df_feriados if pd.notna(d)}
+        if df_feriados else set()
+    )
+    feriados_set = {d for d in feriados_set if pd.notna(d)}
+
+    todas_datas_ts = {pd.to_datetime(d).normalize() for d in todas_datas}
+    min_d = min(todas_datas_ts) if todas_datas_ts else pd.Timestamp.min
+    max_d = max(todas_datas_ts) if todas_datas_ts else pd.Timestamp.max
+
+    feriados_validos  = {d for d in feriados_set if min_d <= d <= max_d}
+    datas_calendario  = sorted(list(todas_datas_ts | feriados_validos))
+
+    dados_aluno = []
+    for d in datas_calendario:
+        status = "Feriado" if d in feriados_set else ("Falta" if d in datas_falta else "Presente")
+        dados_aluno.append({
+            "Data": d,
+            "Status": status,
+            "Presente": status == "Presente",
+            "Aluno": aluno_sel,
+        })
+    return pd.DataFrame(dados_aluno)
+'''
+print(TRECHO_1_NOVA_FUNCAO)
+
+print("=" * 80)
+
+"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 2 — Simplificar _tab_frequencia() para RECEBER df_cal_aluno em vez de
+          recalculá-lo. Assinatura nova + remoção do bloco de cálculo antigo.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"""
+
+TRECHO_2_TAB_FREQUENCIA = '''
+def _tab_frequencia(
+    df_aluno: pd.DataFrame,
+    df_freq: pd.DataFrame,
+    aluno_sel: str,
+    freq_aluno: dict,
+    df_cal_aluno: pd.DataFrame,        # <-- NOVO: substitui datas_globais + df_feriados
+) -> None:
+    if not freq_aluno["tem_dados"]:
+        st.markdown(
+            \'\'\'<div style="background:#F8FAFC;border-radius:14px;padding:24px;border:1px dashed #D1D5DB;
+            color:#8E8E93;font-size:14px;text-align:center">
+            ⬜ Sem dados de frequência — adicione a aba <b>Frequência</b> na planilha</div>\'\'\',
+            unsafe_allow_html=True,
+        )
+        return
+
+    render_freq_card(freq_aluno)
+    st.markdown("<div style=\'height:12px\'></div>", unsafe_allow_html=True)
+
+    df_freq_aluno_tab = df_cal_aluno  # já vem pronto de render_aluno_view()
+
+    if not df_freq_aluno_tab.empty:
+        section_title("📅 Calendário de Presenças")
+        _calendario_faltas(df_freq_aluno_tab)
+        st.markdown("<div style=\'height:16px\'></div>", unsafe_allow_html=True)
+
+    analise_fn_tab = analisar_freq_notas(df_aluno, df_freq_aluno_tab[df_freq_aluno_tab["Status"] != "Feriado"])
+
+    if not analise_fn_tab:
+        return
+
+    # ... (todo o restante da função continua IDÊNTICO ao original a partir daqui:
+    #      section_title("📊 Frequência × Notas"), os 3 KPIs, o cálculo do IIF,
+    #      a linha do tempo etc. Nada muda dali para baixo.)
+'''
+print(TRECHO_2_TAB_FREQUENCIA)
+
+print("=" * 80)
+
+"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 3 — _tab_desempenho() ganha 2 parâmetros novos no final da assinatura
+          e usa o bloco de geração de PDF atualizado.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"""
+
+TRECHO_3_TAB_DESEMPENHO_ASSINATURA = '''
+def _tab_desempenho(
+    df_aluno: pd.DataFrame, df_turma: pd.DataFrame,
+    col_crit: str, col_uc: str, aluno_sel: str, turma_label: str,
+    bimestres: pd.DataFrame, ranking: pd.DataFrame, posicao: int | None,
+    media_aluno: float, media_pond: float, media_turma: float,
+    notas_baixas: int, total_avals: int, delta_turma: float, seq_critica: int,
+    mostrar_ranking: bool, mostrar_turma: bool,
+    df_rec_aluno: pd.DataFrame, obs_geral: str,
+    freq_aluno: dict | None = None,            # <-- NOVO
+    df_cal_aluno: pd.DataFrame | None = None,  # <-- NOVO
+) -> None:
+'''
+print(TRECHO_3_TAB_DESEMPENHO_ASSINATURA)
+
+TRECHO_3_BLOCO_PDF = '''
+    # ── SEÇÃO 9: REGISTROS E EXPORTAÇÃO (bloco do botão PDF atualizado) ──────
+    col_pdf_d, col_xlsx_d = st.columns(2)
+
+    with col_pdf_d:
+        if st.button("📄 Gerar Boletim em PDF", use_container_width=True, type="primary", key="pdf_btn"):
+            with st.spinner("Gerando boletim PDF..."):
+                analise_fn_pdf = None
+                if (
+                    freq_aluno and freq_aluno.get("tem_dados")
+                    and df_cal_aluno is not None and not df_cal_aluno.empty
+                ):
+                    df_cal_sem_feriado = df_cal_aluno[df_cal_aluno["Status"] != "Feriado"]
+                    analise_fn_pdf = analisar_freq_notas(df_aluno, df_cal_sem_feriado)
+
+                st.session_state[f"pdf_bytes_{aluno_sel}"] = gerar_boletim_pdf(
+                    aluno=aluno_sel, turma=turma_label, df_al=df_aluno,
+                    media_al=media_aluno, media_pond=media_pond, media_turma=media_turma,
+                    notas_baixas=notas_baixas, total_avals=total_avals, delta=delta_turma,
+                    bimestres=bimestres, seq_critica=seq_critica,
+                    comparar_turma=False, df_turma=df_turma,
+                    df_rec_aluno=df_rec_aluno if not df_rec_aluno.empty else None,
+                    obs_geral=obs_geral, posicao=posicao, total_alunos=len(df_turma["Aluno"].unique()),
+                    freq_aluno=freq_aluno,
+                    analise_fn_aluno=analise_fn_pdf,
+                )
+
+        if st.session_state[f"pdf_bytes_{aluno_sel}"] is not None:
+            nome_pdf = f"boletim_{aluno_sel.replace(\' \',\'_\')}_{datetime.now().strftime(\'%d%m%Y\')}.pdf"
+            st.download_button("⬇️ Baixar PDF", data=st.session_state[f"pdf_bytes_{aluno_sel}"], file_name=nome_pdf,
+                               mime="application/pdf", use_container_width=True)
+'''
+print(TRECHO_3_BLOCO_PDF)
+
+print("=" * 80)
+
+"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSO 4 — render_aluno_view(): calcula df_cal_aluno UMA VEZ e passa para
+          as duas abas.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"""
+
+TRECHO_4_RENDER_ALUNO_VIEW = '''
+    # (dentro de render_aluno_view, logo após calcular freq_aluno)
+
+    from data.analysis import obter_datas_validas
+    datas_globais = obter_datas_validas(turma_label, df_turmas, df, df_freq, df_feriados)
+
+    freq_aluno = calcular_frequencia_aluno(df_freq, aluno_sel, datas_globais)
+
+    # NOVO: calendário completo do aluno, calculado uma única vez aqui
+    df_cal_aluno = _montar_calendario_aluno(df_freq, aluno_sel, datas_globais, df_feriados)
+
+    col_crit   = coluna_criterio(df_aluno)
+    col_uc     = coluna_uc(df_aluno)
+
+    # ... (resto do fluxo igual) ...
+
+    with tab_desempenho:
+        _tab_desempenho(
+            df_aluno, df_turma, col_crit, col_uc, aluno_sel, turma_label,
+            bimestres, ranking, posicao,
+            media_aluno, media_pond, media_turma,
+            notas_baixas, total_avals, delta_turma, seq_critica,
+            mostrar_ranking, mostrar_turma,
+            df_rec_aluno, obs_geral,
+            freq_aluno=freq_aluno,          # <-- NOVO
+            df_cal_aluno=df_cal_aluno,      # <-- NOVO
+        )
+
+    with tab_freq:
+        _tab_frequencia(df_aluno, df_freq, aluno_sel, freq_aluno, df_cal_aluno)  # <-- assinatura nova
+'''
+print(TRECHO_4_RENDER_ALUNO_VIEW)

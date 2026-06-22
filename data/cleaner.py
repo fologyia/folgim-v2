@@ -38,7 +38,7 @@ def limpar_avaliacoes(df: pd.DataFrame) -> pd.DataFrame:
                 df.rename(columns={col: alvo}, inplace=True)
     if "Data" in df.columns:
         df = df[~df["Data"].astype(str).str.contains(r"↑|instrução|exemplo", case=False, na=False)]
-        df["Data"] = pd.to_datetime(df["Data"], dayfirst=True, errors="coerce")
+        df["Data"] = pd.to_datetime(df["Data"], format="mixed", dayfirst=True, errors="coerce")
     if "Nota" in df.columns:
         df["Nota"] = pd.to_numeric(
             df["Nota"].astype(str).str.replace(",", ".", regex=False),
@@ -132,7 +132,7 @@ def limpar_frequencia(df: pd.DataFrame) -> pd.DataFrame:
     df.rename(columns=rename_final, inplace=True)
 
     if "Data" in df.columns:
-        df["Data"] = pd.to_datetime(df["Data"], dayfirst=True, errors="coerce")
+        df["Data"] = pd.to_datetime(df["Data"], format="mixed", dayfirst=True, errors="coerce")
     if "Presente" in df.columns:
         mapa = {
             "sim": True, "s": True, "yes": True, "1": True, "1.0": True, "true": True,

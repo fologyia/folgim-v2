@@ -11,9 +11,9 @@ CORES = {
 }
 
 PESOS_VETORES = {
-    "Fazer (40%)":    0.40,
-    "Saber (30%)":    0.30,
-    "Comport. (30%)": 0.30,
+    "Fazer (40%)":    0.45,
+    "Saber (30%)":    0.35,
+    "Comport. (30%)": 0.20,
 }
 
 # Nível 2: pesos dos instrumentos dentro de cada vetor.

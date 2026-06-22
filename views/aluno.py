@@ -1372,7 +1372,7 @@ def _tab_monte_carlo(df_aluno: pd.DataFrame, media_pond: float) -> None:
         ---
         
         ### 1. Monte Carlo Tradicional (Estático)
-        * **Como funciona:** Assume que o futuro do aluno será uma oscilação natural ao redor da sua média ponderada atual ($\mu$). O modelo usa o desvio padrão ($\sigma$) para simular notas mais altas ou mais baixas, mas sempre puxando o aluno de volta para o seu centro de massa histórico.
+        * **Como funciona:** Assume que o futuro do aluno será uma oscilação natural ao redor da sua média ponderada atual ($\\mu$). O modelo usa o desvio padrão ($\\sigma$) para simular notas mais altas ou mais baixas, mas sempre puxando o aluno de volta para o seu centro de massa histórico.
         * **Analogia Física:** Um sistema em **regime permanente**. Como um pêndulo oscilando sob uma posição fixa.
         * **Quando usar:** Ideal para alunos estáveis, cujas notas não apresentam grandes picos de melhora ou piora nas últimas semanas.
         

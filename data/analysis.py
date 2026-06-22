@@ -322,12 +322,24 @@ def _nota_vetor(df_vetor: pd.DataFrame, vetor_nome: str) -> float:
     return sum(medias[i] * (p / total_peso) for i, p in presentes.items())
 
 
+def _pesos_vetores_efetivos() -> dict:
+    """Retorna pesos customizados do session_state (se válidos) ou os padrões do config."""
+    try:
+        custom = st.session_state.get("pesos_vetores_custom")
+        if custom and isinstance(custom, dict) and abs(sum(custom.values()) - 1.0) < 0.01:
+            return custom
+    except Exception:
+        pass
+    return PESOS_VETORES
+
+
 def calcular_notas_por_vetor(df_aluno: pd.DataFrame) -> Dict[str, float]:
     if "Vetor (Peso)" not in df_aluno.columns:
         return {}
+    _pv = _pesos_vetores_efetivos()
     return {
         vetor: round(_nota_vetor(df_aluno[df_aluno["Vetor (Peso)"] == vetor].dropna(subset=["Nota"]), vetor), 2)
-        for vetor in PESOS_VETORES
+        for vetor in _pv
         if not df_aluno[df_aluno["Vetor (Peso)"] == vetor].empty
     }
 
@@ -335,8 +347,9 @@ def calcular_notas_por_vetor(df_aluno: pd.DataFrame) -> Dict[str, float]:
 def calcular_media_ponderada(df_aluno: pd.DataFrame) -> float:
     if "Vetor (Peso)" not in df_aluno.columns:
         return df_aluno["Nota"].mean()
+    _pv = _pesos_vetores_efetivos()
     total_peso = soma_pond = 0.0
-    for vetor, peso in PESOS_VETORES.items():
+    for vetor, peso in _pv.items():
         sub = df_aluno[df_aluno["Vetor (Peso)"] == vetor].dropna(subset=["Nota"])
         if not sub.empty:
             soma_pond  += _nota_vetor(sub, vetor) * peso

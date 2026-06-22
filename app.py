@@ -49,7 +49,7 @@ with st.spinner("Carregando dados..."):
         else:
             _col_feriado = raw_feriados.columns[0]
             
-    df_feriados = pd.to_datetime(raw_feriados[_col_feriado], errors="coerce", dayfirst=True).dropna().dt.normalize().unique().tolist() if not raw_feriados.empty and _col_feriado in raw_feriados.columns else []
+    df_feriados = pd.to_datetime(raw_feriados[_col_feriado], format="mixed", errors="coerce", dayfirst=True).dropna().dt.normalize().unique().tolist() if not raw_feriados.empty and _col_feriado in raw_feriados.columns else []
 
 _dup = df.attrs.get("duplicatas_removidas", 0)
 if _dup:
@@ -134,7 +134,7 @@ def _snapshot_perfil(df_snap: pd.DataFrame) -> dict:
         return {}
     _cols = ["Aluno", "Nota", "Data"] + (["Vetor (Peso)"] if "Vetor (Peso)" in df_snap.columns else [])
     _hash = str(df_snap["Nota"].sum()) + str(len(df_snap))
-    perfil = calcular_perfil_turma(_hash, df_snap[_cols].to_json())
+    perfil = calcular_perfil_turma(_hash, df_snap[_cols].to_json(date_format="iso"))
     return dict(zip(perfil["Aluno"], perfil["Risco"])) if not perfil.empty else {}
 
 _ORDEM_RISCO = {"excelente": 3, "adequado": 2, "atencao": 1, "critico": 0}
@@ -242,6 +242,107 @@ with st.sidebar:
             }[x],
         )
 
+    # ── Configuração de Pesos dos Vetores ──────────────────────────────────────
+    st.markdown("---")
+    _PRESETS_PESOS = {
+        "🎓 SENAI Padrão  (45/35/20)":      (45, 35, 20),
+        "🔧 Técnico Intensivo  (50/30/20)":  (50, 30, 20),
+        "🤝 Comportamental  (35/25/40)":     (35, 25, 40),
+        "✏️ Personalizado":                   None,
+    }
+    if "sl_v_fazer" not in st.session_state:
+        st.session_state["sl_v_fazer"] = 45
+    if "sl_v_saber" not in st.session_state:
+        st.session_state["sl_v_saber"] = 35
+    if "sl_v_comp" not in st.session_state:
+        st.session_state["sl_v_comp"] = 20
+
+    with st.expander("⚙️ Pesos dos Vetores", expanded=False):
+        _pesos_atuais = st.session_state.get("pesos_vetores_custom")
+        if _pesos_atuais:
+            _af = int(round(_pesos_atuais.get("Fazer (40%)", 0.4) * 100))
+            _as_ = int(round(_pesos_atuais.get("Saber (30%)", 0.3) * 100))
+            _ac = int(round(_pesos_atuais.get("Comport. (30%)", 0.3) * 100))
+            st.markdown(
+                f'<div style="background:rgba(52,199,89,0.18);border:1px solid rgba(52,199,89,0.45);'
+                f'border-radius:8px;padding:7px 11px;font-size:10px;color:rgba(255,255,255,0.92);'
+                f'margin-bottom:10px">✅ <b>Pesos ativos:</b> Fazer {_af}% · Saber {_as_}% '
+                f'· Comport. {_ac}%</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                '<div style="background:rgba(255,255,255,0.07);border-radius:8px;padding:7px 11px;'
+                'font-size:10px;color:rgba(255,255,255,0.55);margin-bottom:10px">'
+                '📋 Padrão: Fazer 40% · Saber 30% · Comport. 30%</div>',
+                unsafe_allow_html=True,
+            )
+
+        _preset_sel = st.selectbox(
+            "Preset de pesos",
+            list(_PRESETS_PESOS.keys()),
+            key="sel_preset_pesos",
+            label_visibility="collapsed",
+        )
+        _preset_vals = _PRESETS_PESOS[_preset_sel]
+
+        if st.session_state.get("_ultimo_preset_pesos") != _preset_sel and _preset_vals is not None:
+            st.session_state["sl_v_fazer"] = _preset_vals[0]
+            st.session_state["sl_v_saber"] = _preset_vals[1]
+            st.session_state["sl_v_comp"]  = _preset_vals[2]
+            st.session_state["_ultimo_preset_pesos"] = _preset_sel
+            st.rerun()
+
+        _sl_f = st.slider("🔨 Fazer",          0, 100, step=5, key="sl_v_fazer")
+        _sl_s = st.slider("📚 Saber",          0, 100, step=5, key="sl_v_saber")
+        _sl_c = st.slider("🤝 Comportamento",  0, 100, step=5, key="sl_v_comp")
+
+        _soma_v = _sl_f + _sl_s + _sl_c
+        _soma_cor = (
+            "#34C759" if _soma_v == 100
+            else ("#F59E0B" if 90 <= _soma_v <= 110 else "#FF3B30")
+        )
+        _soma_bar = min(_soma_v, 100)
+        st.markdown(
+            f'<div style="margin:6px 0 10px">'
+            f'<div style="display:flex;justify-content:space-between;'
+            f'font-size:10px;color:rgba(255,255,255,0.6);margin-bottom:4px">'
+            f'<span>Total dos pesos</span>'
+            f'<span style="color:{_soma_cor};font-weight:700">{_soma_v}%</span></div>'
+            f'<div style="background:rgba(255,255,255,0.15);border-radius:50px;'
+            f'height:5px;overflow:hidden">'
+            f'<div style="width:{_soma_bar}%;background:{_soma_cor};height:5px;'
+            f'border-radius:50px"></div></div></div>',
+            unsafe_allow_html=True,
+        )
+        if _soma_v != 100:
+            _diff = abs(100 - _soma_v)
+            _dir  = "Faltam" if _soma_v < 100 else "Excedem"
+            st.caption(f"⚠️ {_dir} {_diff}% para fechar em 100%.")
+
+        _bc1, _bc2 = st.columns(2)
+        with _bc1:
+            if st.button(
+                "✅ Aplicar",
+                width="stretch",
+                key="btn_aplicar_pesos",
+                disabled=(_soma_v != 100),
+            ):
+                st.session_state["pesos_vetores_custom"] = {
+                    "Fazer (40%)":    _sl_f / 100,
+                    "Saber (30%)":    _sl_s / 100,
+                    "Comport. (30%)": _sl_c / 100,
+                }
+                st.rerun()
+        with _bc2:
+            if st.button("↩️ Padrão", width="stretch", key="btn_reset_pesos"):
+                st.session_state.pop("pesos_vetores_custom", None)
+                st.session_state.pop("_ultimo_preset_pesos", None)
+                st.session_state["sl_v_fazer"] = 40
+                st.session_state["sl_v_saber"] = 30
+                st.session_state["sl_v_comp"]  = 30
+                st.rerun()
+
     # ── Rodapé da sidebar: indicador de frescor + e-mail + refresh ──────────
     st.markdown("---")
     icone = "🟢" if fonte_dados == "google_sheets" else "🟡"
@@ -326,7 +427,7 @@ with st.sidebar:
                     + (["Vetor (Peso)"] if "Vetor (Peso)" in df_turma_filter.columns else [])
                 )
                 _hash_email = str(df_turma_filter["Nota"].sum()) + str(len(df_turma_filter))
-                _perf_email = calcular_perfil_turma(_hash_email, df_turma_filter[_cols_email].to_json())
+                _perf_email = calcular_perfil_turma(_hash_email, df_turma_filter[_cols_email].to_json(date_format="iso"))
                 _ok, _msg = enviar_relatorio(
                     turma=turma_sel,
                     perfil_df=_perf_email,
@@ -348,7 +449,7 @@ with st.sidebar:
                 + (["Vetor (Peso)"] if "Vetor (Peso)" in df.columns else [])
             )
             _hash_ae = str(df["Nota"].sum()) + str(len(df))
-            _perf_ae = calcular_perfil_turma(_hash_ae, df[_cols_ae].to_json())
+            _perf_ae = calcular_perfil_turma(_hash_ae, df[_cols_ae].to_json(date_format="iso"))
             _ok_ae, _ = enviar_relatorio(
                 turma="Todas as Turmas",
                 perfil_df=_perf_ae,
@@ -370,7 +471,7 @@ if modo_view == "🤖 Análise IA da Turma":
         + (["Instrumento / Atividade"] if "Instrumento / Atividade" in df_turma_filter.columns else [])
     )
     _hash_ia  = str(df_turma_filter["Nota"].sum()) + str(len(df_turma_filter))
-    _perfil_ia = calcular_perfil_turma(_hash_ia, df_turma_filter[_cols_ia].to_json())
+    _perfil_ia = calcular_perfil_turma(_hash_ia, df_turma_filter[_cols_ia].to_json(date_format="iso"))
     render_ia_view(df_turma_filter, df_freq, turma_sel, perfil_ia=_perfil_ia, df_turmas=df_turmas, df_feriados=df_feriados)
 
 elif modo_view == "🏫 Visão da Turma":

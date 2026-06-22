@@ -100,7 +100,7 @@ def _render_fallback_diagnostico(df_turma: pd.DataFrame, turma_sel: str) -> None
         ["Aluno", "Nota", "Data"]
         + (["Vetor (Peso)"] if "Vetor (Peso)" in df_turma.columns else [])
     )
-    perfil = calcular_perfil_turma(_hash, df_turma[_cols].to_json())
+    perfil = calcular_perfil_turma(_hash, df_turma[_cols].to_json(date_format="iso"))
     if perfil.empty:
         st.info("Sem dados suficientes para gerar diagnóstico.")
         return
@@ -217,7 +217,7 @@ def render_ia_view(
             + (["Vetor (Peso)"] if "Vetor (Peso)" in df_turma_filter.columns else [])
             + (["Instrumento / Atividade"] if "Instrumento / Atividade" in df_turma_filter.columns else [])
         )
-        perfil_ia = calcular_perfil_turma(_hash_t, df_turma_filter[_cols_ia].to_json())
+        perfil_ia = calcular_perfil_turma(_hash_t, df_turma_filter[_cols_ia].to_json(date_format="iso"))
 
     if perfil_ia.empty:
         st.warning("Sem dados suficientes para análise nesta turma.")

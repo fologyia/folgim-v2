@@ -1,3 +1,5 @@
+import io
+import zipfile
 from datetime import datetime
 
 import pandas as pd
@@ -6,9 +8,14 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from config import CORES, NOTA_MINIMA, SEQUENCIA_CRITICA_MIN
-from data.analysis import calcular_frequencia_aluno, calcular_perfil_turma, calcular_saude_turma
+from data.analysis import (
+    agrupar_por_semana,
+    calcular_frequencia_aluno,
+    calcular_perfil_turma,
+    calcular_saude_turma,
+)
 from data.export import gerar_excel_turma
-from pdf.generator import gerar_relatorio_turma_pdf
+from pdf.generator import gerar_boletim_pdf, gerar_relatorio_turma_pdf
 from ui.components import divider, section_title
 from utils import coluna_uc
 
@@ -32,7 +39,7 @@ def render_turma_view(
         + (["Vetor (Peso)"] if "Vetor (Peso)" in df_t_view.columns else [])
         + (["Instrumento / Atividade"] if "Instrumento / Atividade" in df_t_view.columns else [])
     )
-    perfil  = calcular_perfil_turma(_hash_t, df_t_view[_cols_t].to_json())
+    perfil  = calcular_perfil_turma(_hash_t, df_t_view[_cols_t].to_json(date_format="iso"))
     saude   = calcular_saude_turma(df_t_view, perfil)
 
     n_critico   = (perfil["Risco"] == "critico").sum()
@@ -618,6 +625,84 @@ def render_turma_view(
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 width="stretch",
             )
+
+    # ── Exportar todos os boletins em ZIP ────────────────────────────────────
+    _zip_key  = f"zip_boletins_{label_turma_view}"
+    _n_alunos = len(perfil)
+    with st.expander(f"📦 Exportar boletins individuais em ZIP  ({_n_alunos} alunos)", expanded=False):
+        st.markdown(
+            '<div style="font-size:12px;color:#6B7280;line-height:1.6;margin-bottom:12px">'
+            'Gera um PDF de boletim individual para <b>cada aluno</b> da turma e empacota '
+            'tudo em um único arquivo <b>.zip</b> — ideal para o encerramento de módulo ou '
+            'entrega de resultados aos coordenadores.'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+        if st.button(
+            f"📥 Gerar ZIP com {_n_alunos} boletins",
+            width="stretch",
+            key="btn_zip_boletins",
+        ):
+            _media_geral_zip = df_t_view["Nota"].mean()
+            _zip_buf = io.BytesIO()
+            _erros   = []
+            with zipfile.ZipFile(_zip_buf, "w", zipfile.ZIP_DEFLATED) as _zf:
+                _prog = st.progress(0, text="Iniciando geração dos boletins…")
+                for _idx, _row in enumerate(perfil.itertuples(index=False), start=1):
+                    _al    = _row.Aluno
+                    _df_al = df_t_view[df_t_view["Aluno"] == _al].copy()
+                    if _df_al.empty:
+                        continue
+                    _prog.progress(
+                        _idx / _n_alunos,
+                        text=f"Gerando boletim de {_al}… ({_idx}/{_n_alunos})",
+                    )
+                    try:
+                        _bim = agrupar_por_semana(_df_al)
+                        _pdf = gerar_boletim_pdf(
+                            aluno=_al,
+                            turma=label_turma_view,
+                            df_al=_df_al,
+                            media_al=float(getattr(_row, "Média_Simples", _df_al["Nota"].mean())),
+                            media_pond=float(_row.Média),
+                            media_turma=_media_geral_zip,
+                            notas_baixas=int(_row.Notas_Baixas),
+                            total_avals=int(_row.Total),
+                            delta=float(_row.Média) - _media_geral_zip,
+                            bimestres=_bim,
+                            seq_critica=int(_row.Seq_Critica),
+                            comparar_turma=False,
+                            df_turma=df_t_view,
+                            posicao=_idx,
+                            total_alunos=_n_alunos,
+                        )
+                        _nome_arq = f"boletim_{_al.replace(' ', '_')}.pdf"
+                        _zf.writestr(_nome_arq, _pdf)
+                    except Exception as _e:
+                        _erros.append(_al)
+                _prog.empty()
+
+            _zip_buf.seek(0)
+            st.session_state[_zip_key] = _zip_buf.read()
+
+            if _erros:
+                st.warning(f"⚠️ {len(_erros)} boletim(s) não puderam ser gerados: {', '.join(_erros)}")
+
+        if st.session_state.get(_zip_key):
+            _zip_nome = (
+                f"boletins_{label_turma_view.replace(' ', '_')}_"
+                f"{datetime.now().strftime('%d%m%Y')}.zip"
+            )
+            st.download_button(
+                "⬇️ Baixar ZIP",
+                data=st.session_state[_zip_key],
+                file_name=_zip_nome,
+                mime="application/zip",
+                width="stretch",
+                key="dl_zip_boletins",
+            )
+            _ok = _n_alunos - len(st.session_state.get(f"_erros_{_zip_key}", []))
+            st.success(f"✅ ZIP pronto com {_ok} boletins.")
 
     divider()
     with st.expander("📋 Tabela detalhada de todos os alunos"):

@@ -357,7 +357,7 @@ def calcular_media_ponderada(df_aluno: pd.DataFrame) -> float:
     return soma_pond / total_peso if total_peso > 0 else df_aluno["Nota"].mean()
 
 
-def detectar_tendencia(df_aluno: pd.DataFrame, janela: int = 5) -> str:
+def detectar_tendencia(df_aluno: pd.DataFrame, janela: int = 4) -> str:
     df_sorted = df_aluno.copy()
     df_sorted["Data_dt"] = pd.to_datetime(df_sorted["Data"], errors="coerce", dayfirst=True)
     serie = df_sorted.dropna(subset=["Data_dt"]).sort_values("Data_dt")["Nota"].tail(janela * 2)

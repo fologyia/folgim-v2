@@ -424,7 +424,7 @@ def calcular_perfil_turma(df_hash: str, df_json: str) -> pd.DataFrame:
             else:
                 break
         seq   = seq if seq >= SEQUENCIA_CRITICA_MIN else 0
-        serie = grp.sort_values("Data")["Nota"].tail(10)
+        serie = grp.sort_values("Data")["Nota"].tail(4)
         tend  = "indefinida"
         if len(serie) >= 4:
             metade = len(serie) // 2

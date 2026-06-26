@@ -365,9 +365,12 @@ def detectar_tendencia(df_aluno: pd.DataFrame, janela: int = 5) -> str:
     if len(serie) < 4:
         return "indefinida"
     metade = len(serie) // 2
-    diff   = serie.iloc[metade:].mean() - serie.iloc[:metade].mean()
-    if diff > 0.5:  return "melhora"
-    if diff < -0.5: return "queda"
+    media_recente = serie.iloc[metade:].mean()
+    diff = media_recente - serie.iloc[:metade].mean()
+    if diff > 0.5:
+        return "melhora"
+    if diff < -0.5 and media_recente < 8.0:
+        return "queda"
     return "estável"
 
 
@@ -396,7 +399,7 @@ def classificar_risco(
         return "critico"
     if media < 7.0 or pct_baixas > 0.20:
         return "atencao"
-    if media >= 8.5 and notas_baixas == 0:
+    if media >= 9.0:
         return "excelente"
     return "adequado"
 
